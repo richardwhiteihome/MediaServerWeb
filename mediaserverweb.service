@@ -1,0 +1,16 @@
+[Unit]
+Description=Media Server WEb Gui
+After=multi-user.target
+Conflicts=getty@tty1.service
+
+[Service]
+Type=simple
+ExecStart=/home/adm-user/MediaServerTool/MediaServerWeb.sh start
+ExecStop=/home/adm-user/MediaServerTool/MediaServerWeb.sh stop
+User=adm-user
+Group=adm-user
+StandardInput=tty-force
+
+[Install]
+WantedBy=multi-user.target
+

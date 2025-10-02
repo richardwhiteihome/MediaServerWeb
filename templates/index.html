@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>MediaServer Monitor</title>
+    <link rel="stylesheet" type="text/css" href="https://wolf.ihome/mediaserver.css"> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+
+
+
+<body>
+    <center>
+        <h1>MediaServer Monitor Tool</h1>
+
+
+    </center>
+    <div class="custom-select" style="width:250px;">
+        <select id="fileSelect">
+            <option value="movie_magnet">Movie Magnet</option>
+            <option value="movie_url">Movie URL</option>
+            <option value="tv_magnet">TV Magnet</option>
+            <option selected value="tv_url">TV URL</option>
+            <option value="MediaLoaderLog">MediaLog</option>
+        </select>
+
+        <textarea id="fileContent" rows="10" cols="150"></textarea>
+
+    </div>
+
+    <hr style="width:100%;text-align:left;margin-left:0">
+    <div class="container">
+        <div class="controls">
+            <button class="button" onclick="controlDownloads('pause_all')">Pause</button>
+            <button class="button button2" onclick="controlDownloads('resume_all')">Resume</button>
+            <button class="button button3" onclick="controlDownloads('purge')">Purge</button>
+            <button class="button button4" onclick="updateFile()">Update File</button>
+        </div>
+
+        <h2>Download Stats</h2>
+
+        <div class="stats" id="stats"></div>
+        <div class="downloads" id="downloads"></div>
+
+    </div>
+
+
+    <script>
+        function updateStats() {
+            $.get('/api/stats', function (data) {
+                let statsHtml = `
+                    Download Speed: ${data.stats.download_speed}<br>
+                    Upload Speed: ${data.stats.upload_speed}<br>
+                    Active: ${data.stats.active} Waiting: ${data.stats.waiting}<br>
+                    Stopped: ${data.stats.stopped}<br>
+                `;
+                $('#stats').html(statsHtml);
+
+                let downloadsHtml = '';
+                data.downloads.forEach(function (download) {
+                    downloadsHtml += `
+                        <div>
+                            <strong>${download.name}</strong><br>
+                            Status: ${download.status} Speed: ${download.speed}<br>
+                            ETA: ${download.eta} Progress: ${download.progress}<br>
+                        </div>
+                    `;
+                });
+                $('#downloads').html(downloadsHtml);
+            });
+        }
+
+        function loadFileContent() {
+            let fileType = $('#fileSelect').val();
+            $.get('/api/files/' + fileType, function (data) {
+                $('#fileContent').val(data.urls.join('\n'));
+            });
+        }
+
+        function updateFile() {
+            let fileType = $('#fileSelect').val();
+            let content = $('#fileContent').val();
+            $.ajax({
+                url: '/api/update_file',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    file_type: fileType,
+                    content: content
+                }),
+                success: function () {
+                    alert('File updated successfully');
+                },
+                error: function () {
+                    alert('Error updating file');
+                }
+            });
+        }
+
+        function controlDownloads(action) {
+            $.post('/api/control/' + action, function () {
+                updateStats();
+            });
+        }
+
+        $('#fileSelect').change(loadFileContent);
+        loadFileContent();
+        updateStats();
+        setInterval(updateStats, 5000);
+    </script>
+</body>
+
+</html>
