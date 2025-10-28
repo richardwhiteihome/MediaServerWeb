@@ -3,7 +3,7 @@
 import time
 from flask import Flask, render_template, jsonify, request
 import aria2p
-import os as os
+from paramiko import SSHClient
 
 
 app = Flask(__name__)
@@ -19,9 +19,18 @@ class MediaServerWeb:
         self.movie_file = "/mnt/data/applications/MediaServer/data/movie_urls"
         self.log_file = "/mnt/data/applications/MediaServer/log/MediaLoader.log"
 
+        self.ssh_pool = None
+        self.init_ssh_pool()
+
         self.file_cache = {}
-        self.cache_timeout = 3
+        self.cache_timeout = 30
         self.aria2_client = None
+
+    def init_ssh_pool(self):
+        """Initialize SSH connection pool"""
+        self.ssh_pool = SSHClient()
+        self.ssh_pool.load_system_host_keys()
+        self.ssh_pool.connect("mustang", username="adm-user")
 
     def get_urls_from_file(self, file_name):
         """Main processing file loader with caching"""
@@ -34,10 +43,10 @@ class MediaServerWeb:
 
         urls = []
         try:
-            # open a file
-            with open(file_name, encoding="utf-8") as f:
+            sftp = self.ssh_pool.open_sftp()
+            with sftp.open(file_name) as f:
                 urls = [line.rstrip() for line in f]
-
+            sftp.close()
             self.file_cache[file_name] = (current_time, urls)
             return urls
         except OSError as error:
@@ -92,8 +101,8 @@ class MediaServerWeb:
 
         return {
             "stats": {
-                "download_speed": stats.download_speed_string(),
-                "upload_speed": stats.upload_speed_string(),
+                "download_speed": stats.download_speed_string,
+                "upload_speed": stats.upload_speed,
                 "active": stats.num_active,
                 "waiting": stats.num_waiting,
                 "stopped": stats.num_stopped,
@@ -114,9 +123,6 @@ def index():
 @app.route("/api/stats")
 def get_stats():
     """get stats to display"""
-    print("Getting stats")
-    if not media_server.aria2_client:
-        media_server.aria2_client = media_server.get_aria_client()
     return jsonify(media_server.get_download_stats())
 
 
@@ -158,8 +164,13 @@ def update_file():
         return jsonify({"error": "Invalid file type"}), 400
 
     try:
-        with open(file_mapping[file_type], "w", encoding="utf-8") as f:
-            f.write(content + "\n")
+        client = SSHClient()
+        client.load_system_host_keys()
+        client.connect("mustang", username="adm-user")
+        sftp = client.open_sftp()
+        sftp.open(file_mapping[file_type], "w").write(content + "\n")
+        sftp.close()
+        client.close()
         return jsonify({"status": "success"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -179,8 +190,6 @@ def control_downloads(action):
             media_server.aria2_client.resume_all()
         elif action == "purge":
             media_server.aria2_client.purge()
-        elif action == "LaunchMediaLoader":
-            os.system("cd /mnt/data/applications/MediaServer/bin/ && ./MediaLoader.sh &")
         else:
             return jsonify({"error": "Invalid action"}), 400
 
@@ -190,5 +199,4 @@ def control_downloads(action):
 
 
 if __name__ == "__main__":
-    app.run(host="172.16.10.21", port=5000, debug=True)
-
+    app.run(host="172.16.10.20", port=5000, debug=True)

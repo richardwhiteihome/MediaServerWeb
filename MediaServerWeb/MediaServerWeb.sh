@@ -2,7 +2,7 @@
 
 
 # Define constants
-readonly BASE_DIR="/home/adm-user/MediaServerWeb/"
+readonly BASE_DIR="/home/adm-user/MediaServerTool/"
 readonly LOG_FILE="${BASE_DIR}/log/MediaServerWeb.run.log"
 readonly SCRIPT_DIR="${BASE_DIR}"
 readonly PYTHON_SCRIPT="MediaServerWeb.py"
@@ -65,7 +65,6 @@ stop_media_gui(){
 # Main execution block
 main() {
     # Ensure required directories exist
-    source /opt/MediaServerWeb/venv/bin/activate 
     ensure_directories || exit 1
 
     # Change to script directory
@@ -80,6 +79,12 @@ main() {
         exit 1
     fi
 
+    # # Set up cleanup trap
+    # #trap cleanup EXIT
+    # #trap 'log_message "ERROR" "Script terminated unexpectedly"; exit 1' ERR SIGINT SIGTERM
+
+    # # Start timeout enforcer
+    # #enforce_timeout
 
     # Log start
     log_message "INFO" "Starting MediaLoader process"
@@ -87,7 +92,7 @@ main() {
 
     # Execute main script with error handling
     if ! python3 "$PYTHON_SCRIPT"; then
-        log_message "ERROR" "Python script exited with error code $?"
+        log_message "ERROR" "Python script execution failed"
         exit 1
     fi
 

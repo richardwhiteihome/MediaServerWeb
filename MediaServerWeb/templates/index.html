@@ -3,89 +3,8 @@
 
 <head>
     <title>MediaServer Monitor</title>
-      <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #ccc;
-        }
-
-        h1 {
-            color: #333;
-        }
-
-        .container {
-            margin-top: 20px;
-        }
-
-        .stats, .downloads {
-            margin-top: 10px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-        }
-
-        .controls {
-            margin-bottom: 20px;
-        }
-
-        .button {
-            padding: 10px 15px;
-            margin-right: 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .button2 {
-            background-color: #008CBA;
-        }
-
-        .button3 {
-            background-color: #f44336;
-        }
-
-        .button4 {
-            background-color: #e7e7e7;
-            color: black;
-        }
-
-        .button5 {
-            background-color: #555555;
-        }
-
-        textarea {
-            width: 100%;
-            margin-top: 10px;
-            font-size: medium;
-        }
-        .custom-select {
-            position: relative;
-            font-family: Arial;
-        }
-
-        select {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            font-size: medium;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: rgb(255, 255, 255);
-            appearance: none;
-            -webkit-appearance: none;
-            -moz-appearance: none;
-            cursor: pointer;
-        }
-
-        
-    </style>
-
+    <link rel="stylesheet" type="text/css" href="https://wolf.ihome/mediaserver.css"> 
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 
 
@@ -96,7 +15,7 @@
 
 
     </center>
-    <div class="custom-select" style="width:750px;">
+    <div class="custom-select" style="width:250px;">
         <select id="fileSelect">
             <option value="movie_magnet">Movie Magnet</option>
             <option value="movie_url">Movie URL</option>
@@ -116,7 +35,6 @@
             <button class="button button2" onclick="controlDownloads('resume_all')">Resume</button>
             <button class="button button3" onclick="controlDownloads('purge')">Purge</button>
             <button class="button button4" onclick="updateFile()">Update File</button>
-            <button class="button button5" onclick="launchMediaLoader()">Launch MediaLoader</button>
         </div>
 
         <h2>Download Stats</h2>
@@ -158,15 +76,6 @@
                 $('#fileContent').val(data.urls.join('\n'));
             });
         }
-
-        function launchMediaLoader() {
-            $.post('/api/control/LaunchMediaLoader', function () {
-                alert('MediaLoader launched successfully');
-            }).fail(function () {
-                alert('Error launching MediaLoader');
-            });
-        }
-
 
         function updateFile() {
             let fileType = $('#fileSelect').val();
