@@ -1,9 +1,10 @@
 """Media server web tool"""
 
 import time
+import os
 from flask import Flask, render_template, jsonify, request
 import aria2p
-import os as os
+
 
 
 app = Flask(__name__)
@@ -18,6 +19,7 @@ class MediaServerWeb:
         self.movie_magnet_file = "/mnt/data/applications/MediaServer/data/movie_magnet_urls"
         self.movie_file = "/mnt/data/applications/MediaServer/data/movie_urls"
         self.log_file = "/mnt/data/applications/MediaServer/log/MediaLoader.log"
+        self.run_file = "/mnt/data/applications/MediaServer/log/MediaLoader.run.log"
 
         self.file_cache = {}
         self.cache_timeout = 3
@@ -68,7 +70,7 @@ class MediaServerWeb:
                         "progress": download.progress_string(),
                     }
                 )
-        except Exception as error:
+        except (ConnectionError, TimeoutError, AttributeError) as error:
             print(f"get_urls_from_file {error}")
             download_info.append(
                 {
@@ -131,6 +133,7 @@ def get_files(file_type):
         "tv_magnet": media_server.tv_magnet_file,
         "tv_url": media_server.tv_file,
         "MediaLoaderLog": media_server.log_file,
+        "MediaLoaderRunLog": media_server.run_file,
     }
 
     if file_type not in file_mapping:
@@ -152,6 +155,7 @@ def update_file():
         "tv_magnet": media_server.tv_magnet_file,
         "tv_url": media_server.tv_file,
         "MediaLoaderLog": media_server.log_file,
+        "MediaLoaderRunLog": media_server.run_file,
     }
 
     if file_type not in file_mapping:
@@ -161,7 +165,7 @@ def update_file():
         with open(file_mapping[file_type], "w", encoding="utf-8") as f:
             f.write(content + "\n")
         return jsonify({"status": "success"})
-    except Exception as e:
+    except OSError as e:
         return jsonify({"error": str(e)}), 500
 
 
@@ -181,14 +185,18 @@ def control_downloads(action):
             media_server.aria2_client.purge()
         elif action == "LaunchMediaLoader":
             os.system("cd /mnt/data/applications/MediaServer/bin/ && ./MediaLoader.sh &")
+        elif action == "clearlogs":
+            with open(media_server.log_file, "w", encoding="utf-8"):
+                pass
+            with open(media_server.run_file, "w", encoding="utf-8"):
+                pass
         else:
             return jsonify({"error": "Invalid action"}), 400
 
         return jsonify({"status": "success"})
-    except Exception as e:
+    except (ConnectionError, OSError) as e:
         return jsonify({"error": str(e)}), 500
 
 
 if __name__ == "__main__":
     app.run(host="172.16.10.21", port=5000, debug=True)
-
